@@ -250,6 +250,7 @@ app.layout = html.Div([
 
     # Mapa: a moldura tem sempre o mesmo tamanho, mas o conteúdo permite zoom (roda do mouse) e arrastar
     html.Div([dcc.Graph(id='map', style=estilo_grafico,
+              config={'scrollZoom': True, 'displayModeBar': True}),
                         config={'scrollZoom': False, 'displaylogo': False,
                                 'modeBarButtonsToRemove': ['select2d', 'lasso2d', 'zoomOutGeo']})],
              style=estilo_caixa),
