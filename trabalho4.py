@@ -194,84 +194,60 @@ app.index_string = '''<!DOCTYPE html>
             {%scripts%}
             {%renderer%}
         </footer>
-        <script>
-        // Zoom do mapa: nunca fica menor que o tamanho padrão (escala 1); só aumenta os desenhos
-        (function () {
-            function ligar() {
-                var caixa = document.getElementById('map');
-                if (!caixa) { setTimeout(ligar, 300); return; }
-                if (caixa.dataset.zoomFixo) { return; }
-                caixa.dataset.zoomFixo = '1';
-                caixa.addEventListener('wheel', function (e) {
-                    var gd = caixa.getElementsByClassName('js-plotly-plot')[0];
-                    if (!gd || !window.Plotly) { return; }
-                    var geo = (gd.layout && gd.layout.geo) || {};
-                    var atual = (geo.projection && geo.projection.scale) || 1;
-                    var dy = Math.max(-100, Math.min(100, e.deltaY));
-                    if (atual <= 1 && dy > 0) { return; }   // já no tamanho padrão: a página rola normalmente
-                    e.preventDefault();
-                    e.stopPropagation();
-                    var nova = Math.min(12, Math.max(1, atual * Math.exp(-dy * 0.002)));
-                    if (nova === atual) { return; }
-                    var mudancas = {'geo.projection.scale': nova, 'dragmode': nova > 1 ? 'pan' : false};
-                    if (nova <= 1) { mudancas['geo.center.lon'] = 0; mudancas['geo.center.lat'] = 0; }
-                    window.Plotly.relayout(gd, mudancas);
-                }, {capture: true, passive: false});
-            }
-            ligar();
-        })();
-        </script>
     </body>
 </html>'''
 
-# Estilos (tudo empilhado, centralizado e do mesmo tamanho)
-estilo_titulo = {'textAlign': 'center', 'backgroundColor': '#1f3a5f', 'color': 'white',
-                 'padding': '20px', 'borderRadius': '8px', 'marginBottom': '20px'}
-estilo_filtro_medalha = {'textAlign': 'center', 'margin': '10px auto'}
-estilo_filtro = {'textAlign': 'left', 'margin': '10px auto'}      # texto à esquerda, alinhado com o gráfico
+# Estilos
+estilo_pagina = {'fontFamily': 'Arial, sans-serif', 'maxWidth': '900px', 'margin': '0 auto', 'padding': '30px'}
+estilo_titulo = {'textAlign': 'center', 'color': 'white', 'marginTop': '0',
+                 'marginBottom': '40px'}                          # espaço maior entre o título e o primeiro filtro
+estilo_caixa = {'backgroundColor': 'white', 'borderRadius': '8px', 'padding': '20px',
+                'marginBottom': '25px', 'boxShadow': '0 2px 6px rgba(0,0,0,0.2)'}   # "caixa" branca
+estilo_filtro = {'textAlign': 'left', 'marginBottom': '15px'}      # texto à esquerda, alinhado com o gráfico
 estilo_texto_filtro = {'display': 'block', 'marginBottom': '8px'}  # espaço entre o texto e a seleção
 estilo_grafico = {'height': '500px', 'width': '100%'}
-estilo_caixa = {'height': '500px', 'width': '100%', 'overflow': 'hidden'}   # moldura do mapa (tamanho fixo)
 
 app.layout = html.Div([
     html.H1('Quadro de Medalhas Olímpicas (1992 a 2020)', style=estilo_titulo),
 
     # Filtro de medalha (mapa, área e barras)
     html.Div([
-        html.Label('Tipo de medalha:', style=estilo_texto_filtro),
-        dcc.RadioItems(id='filtro-medalha', options=['Ouro', 'Prata', 'Bronze', 'Todos'], value='Todos',
-                       inline=True,
-                       labelStyle={'display': 'inline-block', 'marginRight': '30px'},
-                       inputStyle={'marginRight': '6px'})
-    ], style=estilo_filtro_medalha),
-
-    # Mapa: a moldura tem sempre o mesmo tamanho, mas o conteúdo permite zoom (roda do mouse) e arrastar
-    html.Div([
-        dcc.Graph(id='map', style=estilo_grafico,
-                  config={'scrollZoom': True, 'displaylogo': False,
-                          'modeBarButtonsToRemove': ['select2d', 'lasso2d']})
+        html.Div([
+            html.Label('Tipo de medalha:', style=estilo_texto_filtro),
+            dcc.RadioItems(id='filtro-medalha', options=['Ouro', 'Prata', 'Bronze', 'Todos'], value='Todos',
+                           inline=True,
+                           labelStyle={'display': 'inline-block', 'marginRight': '30px'},
+                           inputStyle={'marginRight': '6px'})
+        ], style={'textAlign': 'left'})
     ], style=estilo_caixa),
 
-    dcc.Graph(id='area-chart', style=estilo_grafico),
+    # Mapa: a moldura tem sempre o mesmo tamanho, mas o conteúdo permite zoom (roda do mouse) e arrastar
+    html.Div([dcc.Graph(id='map', style=estilo_grafico,
+                        config={'scrollZoom': True, 'displaylogo': False,
+                                'modeBarButtonsToRemove': ['select2d', 'lasso2d']})],
+             style=estilo_caixa),
+
+    html.Div([dcc.Graph(id='area-chart', style=estilo_grafico)], style=estilo_caixa),
 
     # Filtro de ano (barras)
     html.Div([
-        html.Label('Ano olímpico (País sede):', style=estilo_texto_filtro),
-        dcc.Dropdown(id='filtro-ano', options=opcoes_ano, value='Todos', clearable=False)
-    ], style=estilo_filtro),
-
-    dcc.Graph(id='bar-chart', style=estilo_grafico),
+        html.Div([
+            html.Label('Ano olímpico (País sede):', style=estilo_texto_filtro),
+            dcc.Dropdown(id='filtro-ano', options=opcoes_ano, value='Todos', clearable=False)
+        ], style=estilo_filtro),
+        dcc.Graph(id='bar-chart', style=estilo_grafico)
+    ], style=estilo_caixa),
 
     # Filtro de país (pizza)
     html.Div([
-        html.Label('País:', style=estilo_texto_filtro),
-        dcc.Dropdown(id='filtro-pais', options=opcoes_pais, value='Estados Unidos', clearable=False)
-    ], style=estilo_filtro),
+        html.Div([
+            html.Label('País:', style=estilo_texto_filtro),
+            dcc.Dropdown(id='filtro-pais', options=opcoes_pais, value='Estados Unidos', clearable=False)
+        ], style=estilo_filtro),
+        dcc.Graph(id='pie-chart', style=estilo_grafico)
+    ], style=estilo_caixa)
 
-    dcc.Graph(id='pie-chart', style=estilo_grafico)
-
-], style={'fontFamily': 'Arial, sans-serif', 'maxWidth': '900px', 'margin': '0 auto', 'padding': '30px',
-          'textAlign': 'center'})
+], style=estilo_pagina)
 
 
 # Mapa (filtro de medalha)
@@ -289,7 +265,7 @@ def atualiza_mapa(medalha):
                         labels=rotulos,
                         color_continuous_scale=px.colors.sequential.YlOrRd,
                         title='Medalhas (' + medalha + ') de 1992 a 2020')
-    map_fig.update_layout(dragmode=False)   # no tamanho padrão o mapa fica parado
+    map_fig.update_layout(dragmode='pan')   # no tamanho padrão o mapa fica parado
     # Sem moldura própria: a única caixa visível é a branca, que tem tamanho fixo.
     # O zoom só mexe no conteúdo (os países) dentro dela.
     map_fig.update_geos(showframe=False, bgcolor='white')
