@@ -210,6 +210,9 @@ estilo_grafico = {'height': '500px', 'width': '100%'}
 app.layout = html.Div([
     html.H1('Quadro de Medalhas Olímpicas (1992 a 2020)', style=estilo_titulo),
 
+    # Elemento invisível usado apenas como "saída" do callback em JavaScript (limite de zoom do mapa)
+    html.Div(id='dummy-mapa', style={'display': 'none'}),
+
     # Filtro de medalha (mapa, área e barras)
     html.Div([
         html.Div([
@@ -270,6 +273,30 @@ def atualiza_mapa(medalha):
     # O zoom só mexe no conteúdo (os países) dentro dela.
     map_fig.update_geos(showframe=False, bgcolor='white')
     return map_fig
+
+
+# Limite de zoom do mapa: se o zoom ficar menor que o tamanho normal (escala 1),
+# volta o mapa para o tamanho e a posição originais.
+# Roda no navegador (JavaScript), por isso funciona igual no Render.
+app.clientside_callback(
+    """
+    function(relayout) {
+        if (!relayout) { return window.dash_clientside.no_update; }
+        var escala = relayout['geo.projection.scale'];
+        if (escala !== undefined && escala < 1) {
+            var gd = document.getElementById('map').getElementsByClassName('js-plotly-plot')[0];
+            Plotly.relayout(gd, {
+                'geo.projection.scale': 1,
+                'geo.center.lon': 0,
+                'geo.center.lat': 0
+            });
+        }
+        return window.dash_clientside.no_update;
+    }
+    """,
+    Output('dummy-mapa', 'children'),
+    Input('map', 'relayoutData')
+)
 
 
 # Área (filtro de medalha)
